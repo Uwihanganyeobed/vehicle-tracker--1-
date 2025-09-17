@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { MapPin, Navigation, Zap, RefreshCw } from "lucide-react"
 import { vehicleApi, type TrackingData } from "@/lib/api"
-import { io, type Socket } from "socket.io-client"
 
 export function VehicleMap() {
   const mapRef = useRef<HTMLDivElement>(null)
@@ -17,7 +16,6 @@ export function VehicleMap() {
   const [vehicles, setVehicles] = useState<TrackingData[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string>("")
-  const socketRef = useRef<Socket | null>(null)
 
   const fetchVehicleData = async () => {
     try {
@@ -47,42 +45,6 @@ export function VehicleMap() {
 
   // Initialize map only once
   useEffect(() => {
-    // Initialize socket connection for live logs
-    if (typeof window !== "undefined" && !socketRef.current) {
-      const socket = io({ path: "/api/socket" })
-      socket.on("connect", () => {
-        // eslint-disable-next-line no-console
-        console.log("socket connected")
-      })
-      socket.on("vehicle:coords", (payload: any) => {
-        if (payload?.vehicles && Array.isArray(payload.vehicles)) {
-          const mapped: TrackingData[] = payload.vehicles.map((v: any) => ({
-            id: v.id,
-            name: v.name,
-            lat: v.lat,
-            lng: v.lng,
-            speed: v.speed ?? 0,
-            heading: v.heading ?? 0,
-            status: (v.status as any) || "active",
-            fuel: v.fuel ?? 0,
-            driver: v.driver || "",
-            lastUpdate: v.lastUpdate || new Date(payload.timestamp || Date.now()).toISOString(),
-          }))
-          setVehicles(mapped)
-          setLastUpdate(new Date().toLocaleTimeString())
-          // Update markers immediately if map is ready
-          if (mapInstanceRef.current) {
-            void updateVehicleMarkers(mapped)
-          }
-        }
-      })
-      socketRef.current = socket
-    }
-    return () => {
-      socketRef.current?.disconnect()
-      socketRef.current = null
-    }
-  }, [])
     const initializeMap = async () => {
       if (typeof window !== "undefined" && mapRef.current && !mapInstanceRef.current) {
         const L = (await import("leaflet")).default
@@ -115,15 +77,15 @@ export function VehicleMap() {
 
     // Cleanup function to remove the map when component unmounts
     return () => {
-      const mapObj = mapInstanceRef.current
-      if (mapObj) {
-        mapObj.remove()
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
         mapInstanceRef.current = null
         setMapLoaded(false)
       }
-      try {
-        ;(window as any).selectVehicle = undefined
-      } catch {}
+      if (typeof window !== "undefined") {
+        const w: any = window as any
+        w.selectVehicle = undefined
+      }
     }
   }, []) // Empty dependency array - only run once
 
