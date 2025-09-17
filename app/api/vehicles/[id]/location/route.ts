@@ -1,126 +1,34 @@
 import { type NextRequest, NextResponse } from "next/server"
-
-// Mock database - same as in other routes
-const vehicles = [
-  {
-    id: "VH001",
-    name: "Delivery Truck 1",
-    driver: "John Smith",
-    status: "active",
-    location: "Manhattan, NY",
-    lat: 40.7589,
-    lng: -73.9851,
-    speed: 45,
-    fuel: 78,
-    lastUpdate: new Date().toISOString(),
-    route: "Route A",
-    vehicleType: "Truck",
-    licensePlate: "ABC-123",
-    year: 2022,
-    make: "Ford",
-    model: "Transit",
-    mileage: 25000,
-    nextMaintenance: "2024-02-15",
-    notes: "Regular delivery vehicle for downtown routes",
-    heading: 90,
-  },
-  {
-    id: "VH002",
-    name: "Van 2",
-    driver: "Sarah Johnson",
-    status: "inactive",
-    location: "Brooklyn, NY",
-    lat: 40.7505,
-    lng: -73.9934,
-    speed: 0,
-    fuel: 45,
-    lastUpdate: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    route: "Route B",
-    vehicleType: "Van",
-    licensePlate: "XYZ-789",
-    year: 2021,
-    make: "Mercedes",
-    model: "Sprinter",
-    mileage: 32000,
-    nextMaintenance: "2024-01-20",
-    notes: "Backup vehicle for large deliveries",
-    heading: 0,
-  },
-  {
-    id: "VH003",
-    name: "Truck 3",
-    driver: "Mike Wilson",
-    status: "active",
-    location: "Queens, NY",
-    lat: 40.7282,
-    lng: -73.7949,
-    speed: 32,
-    fuel: 92,
-    lastUpdate: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-    route: "Route C",
-    vehicleType: "Truck",
-    licensePlate: "DEF-456",
-    year: 2023,
-    make: "Isuzu",
-    model: "NPR",
-    mileage: 15000,
-    nextMaintenance: "2024-03-10",
-    notes: "New vehicle with advanced GPS tracking",
-    heading: 180,
-  },
-  {
-    id: "VH004",
-    name: "Delivery Van 4",
-    driver: "Lisa Brown",
-    status: "maintenance",
-    location: "Bronx, NY",
-    lat: 40.7128,
-    lng: -74.006,
-    speed: 0,
-    fuel: 67,
-    lastUpdate: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    route: "Route D",
-    vehicleType: "Van",
-    licensePlate: "GHI-321",
-    year: 2020,
-    make: "Ford",
-    model: "Transit Connect",
-    mileage: 45000,
-    nextMaintenance: "2024-01-15",
-    notes: "Currently undergoing scheduled maintenance",
-    heading: 0,
-  },
-]
+import { vehicleTable } from "@/lib/sqlite"
 
 // PUT /api/vehicles/[id]/location - Update vehicle location
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Simple bearer token check. Set TRACK_TOKEN in env and include Authorization: Bearer <token>
+    const auth = request.headers.get("authorization") || ""
+    const token = process.env.TRACK_TOKEN
+    if (token) {
+      const ok = auth.toLowerCase().startsWith("bearer ") && auth.slice(7).trim() === token
+      if (!ok) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await request.json()
     const { lat, lng, speed, heading, location } = body
 
-    const vehicleIndex = vehicles.findIndex((v) => v.id === params.id)
+    const existing = vehicleTable.get(params.id)
+    if (!existing) return NextResponse.json({ success: false, error: "Vehicle not found" }, { status: 404 })
 
-    if (vehicleIndex === -1) {
-      return NextResponse.json({ success: false, error: "Vehicle not found" }, { status: 404 })
-    }
-
-    // Update location data
-    vehicles[vehicleIndex] = {
-      ...vehicles[vehicleIndex],
-      lat: lat || vehicles[vehicleIndex].lat,
-      lng: lng || vehicles[vehicleIndex].lng,
-      speed: speed !== undefined ? speed : vehicles[vehicleIndex].speed,
-      heading: heading !== undefined ? heading : vehicles[vehicleIndex].heading,
-      location: location || vehicles[vehicleIndex].location,
+    const updateDoc = {
+      lat: lat ?? existing.lat,
+      lng: lng ?? existing.lng,
+      speed: speed ?? existing.speed,
+      heading: heading ?? existing.heading,
+      location: location ?? existing.location,
+      status: speed && speed > 0 ? "active" : existing.status,
       lastUpdate: new Date().toISOString(),
-      status: speed > 0 ? "active" : vehicles[vehicleIndex].status,
     }
-
-    return NextResponse.json({
-      success: true,
-      data: vehicles[vehicleIndex],
-      message: "Vehicle location updated successfully",
-    })
+    const updated = vehicleTable.update(params.id, updateDoc)
+    return NextResponse.json({ success: true, data: updated, message: "Vehicle location updated successfully" })
   } catch (error) {
     return NextResponse.json({ success: false, error: "Failed to update vehicle location" }, { status: 500 })
   }

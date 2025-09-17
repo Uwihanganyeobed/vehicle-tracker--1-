@@ -86,7 +86,7 @@ export function VehicleManagement() {
           setIsAddDialogOpen(false)
           toast({
             title: "Success",
-            description: "Vehicle added successfully",
+            description: `Vehicle added successfully (ID: ${response.data.id})`,
           })
         } else {
           toast({
@@ -258,8 +258,9 @@ export function VehicleManagement() {
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-lg">{vehicle.name}</CardTitle>
+                  <p className="text-xs text-muted-foreground">ID: {vehicle.id}</p>
                   <p className="text-sm text-muted-foreground">
-                    {vehicle.make} {vehicle.model} ({vehicle.year})
+                    {vehicle.make} {vehicle.model}  ({vehicle.year})
                   </p>
                   <p className="text-sm text-muted-foreground">{vehicle.licensePlate}</p>
                 </div>

@@ -64,6 +64,11 @@ export function VehicleMap() {
 
         mapInstanceRef.current = map
         setMapLoaded(true)
+
+        // Expose a global hook for the list to center on a vehicle
+        ;(window as any).selectVehicle = (vehicleId: string) => {
+          centerOnVehicle(vehicleId)
+        }
       }
     }
 
@@ -75,6 +80,9 @@ export function VehicleMap() {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
         setMapLoaded(false)
+      }
+      if (typeof window !== "undefined" && (window as any).selectVehicle) {
+        delete (window as any).selectVehicle
       }
     }
   }, []) // Empty dependency array - only run once
