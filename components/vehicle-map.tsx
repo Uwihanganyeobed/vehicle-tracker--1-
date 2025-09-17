@@ -16,6 +16,7 @@ export function VehicleMap() {
   const [vehicles, setVehicles] = useState<TrackingData[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string>("")
+  const sseRef = useRef<EventSource | null>(null)
 
   const fetchVehicleData = async () => {
     try {
@@ -45,6 +46,9 @@ export function VehicleMap() {
 
   // Initialize map only once
   useEffect(() => {
+    // Warm up socket server
+    fetch("/api/socket").catch(() => {})
+
     const initializeMap = async () => {
       if (typeof window !== "undefined" && mapRef.current && !mapInstanceRef.current) {
         const L = (await import("leaflet")).default
@@ -88,6 +92,39 @@ export function VehicleMap() {
       }
     }
   }, []) // Empty dependency array - only run once
+
+  // SSE live updates -> update vehicles/markers
+  useEffect(() => {
+    if (typeof window === "undefined" || sseRef.current) return
+    const es = new EventSource("/api/stream")
+    es.onmessage = (ev) => {
+      try {
+        const payload = JSON.parse(ev.data)
+        if (payload?.vehicles && Array.isArray(payload.vehicles)) {
+          const mapped: TrackingData[] = payload.vehicles.map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            lat: v.lat,
+            lng: v.lng,
+            speed: v.speed ?? 0,
+            heading: v.heading ?? 0,
+            status: (v.status as any) || "active",
+            fuel: v.fuel ?? 0,
+            driver: v.driver || "",
+            lastUpdate: v.lastUpdate || new Date(payload.timestamp || Date.now()).toISOString(),
+          }))
+          setVehicles(mapped)
+          setLastUpdate(new Date().toLocaleTimeString())
+          if (mapInstanceRef.current) void updateVehicleMarkers(mapped)
+        }
+      } catch {}
+    }
+    sseRef.current = es
+    return () => {
+      sseRef.current?.close()
+      sseRef.current = null
+    }
+  }, [])
 
   // Update markers when vehicles data changes
   useEffect(() => {
