@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import type { DivIconOptions } from "leaflet"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { MapPin, Navigation, Zap, RefreshCw } from "lucide-react"
@@ -94,7 +95,7 @@ export function VehicleMap() {
     }
   }, [vehicles, mapLoaded])
 
-  const createVehicleIcon = (vehicle: TrackingData) => {
+  const createVehicleIcon = (vehicle: TrackingData): DivIconOptions => {
     const getMarkerColor = (status: string) => {
       switch (status) {
         case "active":
@@ -135,8 +136,8 @@ export function VehicleMap() {
     return {
       html: iconHtml,
       className: "custom-vehicle-marker",
-      iconSize: [24, 24],
-      iconAnchor: [12, 24],
+      iconSize: [24, 24] as [number, number],
+      iconAnchor: [12, 24] as [number, number],
     }
   }
 
@@ -220,7 +221,7 @@ export function VehicleMap() {
   const handleFitAllVehicles = async () => {
     if (mapInstanceRef.current && vehicles.length > 0) {
       const L = (await import("leaflet")).default
-      const group = new L.featureGroup(Array.from(markersRef.current.values()))
+      const group = L.featureGroup(Array.from(markersRef.current.values()))
       mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1))
     }
   }

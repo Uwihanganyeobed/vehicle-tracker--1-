@@ -15,16 +15,16 @@ npm run dev
 ```
 App runs at `http://localhost:3000`.
 
-### SQLite Setup (default)
-No external database service required. A local SQLite file will be created automatically.
+### MongoDB Setup
+Use a local MongoDB server or MongoDB Atlas.
 
-1) Create `.env.local` in the project root with (optional overrides):
+1) Create `.env.local` in the project root with:
 ```
-SQLITE_DB_PATH=.data/vehicle-tracker.db
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB=vehicle-tracker
 TRACK_TOKEN=your-secret   # optional but recommended
 ```
-2) The schema initializes on first run; a database file is created at `.data/vehicle-tracker.db`.
-3) Restart `npm run dev` after setting env vars.
+2) Restart `npm run dev` after setting env vars.
 
 ### Environment (optional but recommended)
 - Security token for location updates:

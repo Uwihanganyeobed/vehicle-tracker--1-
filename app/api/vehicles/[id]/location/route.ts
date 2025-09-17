@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { vehicleTable } from "@/lib/sqlite"
+import { getCollection } from "@/lib/mongodb"
 
 // PUT /api/vehicles/[id]/location - Update vehicle location
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -15,7 +15,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
     const { lat, lng, speed, heading, location } = body
 
-    const existing = vehicleTable.get(params.id)
+    const col = await getCollection("vehicles")
+    const existing = await col.findOne({ id: params.id })
     if (!existing) return NextResponse.json({ success: false, error: "Vehicle not found" }, { status: 404 })
 
     const updateDoc = {
@@ -27,8 +28,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       status: speed && speed > 0 ? "active" : existing.status,
       lastUpdate: new Date().toISOString(),
     }
-    const updated = vehicleTable.update(params.id, updateDoc)
-    return NextResponse.json({ success: true, data: updated, message: "Vehicle location updated successfully" })
+    const res = await col.findOneAndUpdate({ id: params.id }, { $set: updateDoc }, { returnDocument: "after" })
+    return NextResponse.json({ success: true, data: res.value, message: "Vehicle location updated successfully" })
   } catch (error) {
     return NextResponse.json({ success: false, error: "Failed to update vehicle location" }, { status: 500 })
   }

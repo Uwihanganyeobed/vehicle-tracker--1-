@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { vehicleTable } from "@/lib/sqlite"
+import { getCollection } from "@/lib/mongodb"
 
 // GET /api/vehicles/tracking - Get real-time tracking data
 export async function GET(request: NextRequest) {
   try {
-    const vehicles = vehicleTable.all()
+    const col = await getCollection("vehicles")
+    const vehicles = await col.find({}).toArray()
     const trackingData = vehicles.map((vehicle) => ({
       id: vehicle.id,
       name: vehicle.name,

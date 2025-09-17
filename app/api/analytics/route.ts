@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { vehicleTable } from "@/lib/sqlite"
+import { getCollection } from "@/lib/mongodb"
 
 // GET /api/analytics - Get analytics data from live store
 export async function GET(request: NextRequest) {
   try {
-    const vehicles = vehicleTable.all()
+    const col = await getCollection("vehicles")
+    const vehicles = await col.find({}).toArray()
     const totalVehicles = vehicles.length
     const activeVehicles = vehicles.filter((v) => v.status === "active").length
     const inactiveVehicles = vehicles.filter((v) => v.status === "inactive").length

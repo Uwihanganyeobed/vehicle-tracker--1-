@@ -158,6 +158,7 @@ export function VehicleList() {
           <div key={vehicle.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
             <div className="flex items-start justify-between mb-2">
               <div>
+                <h3 className="font-medium text-sm">v_id: {vehicle.id}</h3>
                 <h3 className="font-medium text-sm">{vehicle.name}</h3>
                 <p className="text-xs text-muted-foreground">{vehicle.driver}</p>
                 <p className="text-xs text-muted-foreground">{vehicle.route}</p>
